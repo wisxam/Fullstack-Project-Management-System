@@ -1,4 +1,5 @@
 import { Attachment } from "./attachmentTypes";
+import { Comment } from "./commentsTypes";
 import { Priority } from "./priorityTypes";
 import { Status } from "./statsTypes";
 import { User } from "./userTypes";
@@ -17,7 +18,7 @@ export interface Task {
   authorUserId?: number;
   assignedUserId?: number;
 
-  // Not in datamodel of tasks data but fetched from other tables using foreign keys
+  // Not in datamodel of tasks in prisma schema data but fetched from other tables using foreign keys
   author?: User;
   assignee?: User;
   comments?: Comment[];

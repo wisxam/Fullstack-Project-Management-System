@@ -3,7 +3,7 @@ import { Project } from "../types/projectTypes";
 import { Task } from "../types/taskTypes";
 
 export const api = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_URL }), // Grabs the public base URL
+  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }), // Grabs the public base URL
   reducerPath: "api",
   tagTypes: ["Projects", "Tasks"],
   endpoints: (build) => ({
@@ -25,10 +25,7 @@ export const api = createApi({
       query: ({ projectId }) => `tasks?projectId=${projectId}`,
       providesTags: (result) =>
         result
-          ? result.map(({ id }) => ({
-              type: "Tasks" as const,
-              id,
-            }))
+          ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
           : [{ type: "Tasks" as const }],
     }),
 
