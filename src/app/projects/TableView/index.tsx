@@ -40,14 +40,14 @@ const columns: GridColDef[] = [
     field: "assignee",
     headerName: "Assignee",
     width: 150,
-    renderCell: (params) => params.value.username || "Unassigned",
+    renderCell: (params) => params.value?.username || "Unassigned",
   },
 ];
 const Tableview = ({ id, setIsModalNewTaskOpen }: Props) => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const {
     data: tasks,
-    error,
+    isError,
     isLoading,
   } = useGetTasksQuery({ projectId: Number(id) });
 
@@ -59,14 +59,25 @@ const Tableview = ({ id, setIsModalNewTaskOpen }: Props) => {
     );
   }
 
-  if (error) {
+  if (isError) {
     return <div>An error occurred while fetching tasks</div>;
   }
 
   return (
     <div className="h-auto w-full px-4 pb-8 xl:px-6">
       <div className="pt-5">
-        <Header name="Table View" isSmallText />
+        <Header
+          name="Table View"
+          isSmallText
+          buttonComponent={
+            <button
+              className="flex items-center rounded-md bg-blue-primary px-3 py-2 text-white hover:bg-blue-600"
+              onClick={() => setIsModalNewTaskOpen(true)}
+            >
+              Add Task
+            </button>
+          }
+        />
       </div>
       <DataGrid
         rows={tasks || []}

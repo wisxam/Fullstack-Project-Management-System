@@ -1,11 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Project } from "../types/projectTypes";
 import { Task } from "../types/taskTypes";
+import { SearchResults } from "../types/searchResults";
+import { User } from "../types/userTypes";
+import { Team } from "../types/teamTypes";
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }), // Grabs the public base URL
   reducerPath: "api",
-  tagTypes: ["Projects", "Tasks"],
+  tagTypes: ["Projects", "Tasks", "searchTerm", "Users", "Teams"],
   endpoints: (build) => ({
     getProjects: build.query<Project[], void>({
       query: () => "projects",
@@ -49,6 +52,35 @@ export const api = createApi({
         { type: "Tasks", id: taskId }, // I would wanna update only the changed ones not the entire task list (one specific task not all the tasks)
       ],
     }),
+
+    deleteTask: build.mutation<void, number>({
+      query: (taskId) => ({
+        url: `tasks/${taskId}`,
+        method: "DELETE",
+      }),
+      // Add invalidation for search term
+      invalidatesTags: (result, error, taskId) => [
+        { type: "Tasks", id: taskId },
+        { type: "searchTerm", id: "SEARCH" }, // This should be an identifier for my search cache
+        // Incase of deletion i invalidate the searchTerm, and the searchTerm is being used as providedTags in my searchTerm query
+      ],
+    }),
+
+    searchTerm: build.query<SearchResults, string>({
+      query: (query) => `search?query=${query}`,
+      providesTags: (result) =>
+        result ? [{ type: "searchTerm", id: "SEARCH" }] : [], // Fallback incase the searchTerm returns back with null
+    }),
+
+    getUsers: build.query<User[], void>({
+      query: () => "users",
+      providesTags: ["Users"],
+    }),
+
+    getTeams: build.query<Team[], void>({
+      query: () => "teams",
+      providesTags: ["Teams"],
+    }),
   }),
 });
 
@@ -58,4 +90,8 @@ export const {
   useGetTasksQuery,
   useCreateTaskMutation,
   useUpdateTaskStatusMutation,
+  useDeleteTaskMutation,
+  useSearchTermQuery,
+  useGetUsersQuery,
+  useGetTeamsQuery,
 } = api;

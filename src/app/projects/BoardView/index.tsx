@@ -1,7 +1,13 @@
 import { useGetTasksQuery, useUpdateTaskStatusMutation } from "@/app/state/api";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
+import {
+  DndProvider,
+  DragSourceMonitor,
+  DropTargetMonitor,
+  useDrag,
+  useDrop,
+} from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Task as TaskType } from "@/app/types/taskTypes";
 import { zoomies } from "ldrs";
 import { EllipsisVertical, PlusIcon } from "lucide-react";
@@ -9,6 +15,7 @@ import { format } from "date-fns";
 import Image from "next/image";
 import CommentsModal from "@/components/PagesComponents/CommentsModal";
 import { Priority } from "@/app/types/priorityTypes";
+import ModalDeleteTask from "@/components/ModalDeleteTask";
 
 zoomies.register();
 
@@ -79,7 +86,7 @@ const TaskColumn = ({
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "task",
     drop: (item: { id: number }) => moveTask(item.id, status),
-    collect: (monitor: any) => ({
+    collect: (monitor: DropTargetMonitor) => ({
       isOver: !!monitor.isOver(),
     }),
   }));
@@ -130,7 +137,7 @@ const TaskColumn = ({
       {tasks
         .filter((task) => task.status === status)
         .map((task) => (
-          <Task key={task.id} task={task} moveTask={moveTask} />
+          <Task key={`${status}-${task.id}`} task={task} moveTask={moveTask} />
         ))}
     </div>
   );
@@ -141,10 +148,31 @@ type TaskProps = {
 };
 
 const Task = ({ task }: TaskProps) => {
+  const [isDeleteTabOpened, setIsDeleteTabOpened] = useState(false);
+  const deleteTabRef = useRef<HTMLDivElement | null>(null);
+  const [isModalDeleteTaskOpen, setIsModalDeleteTaskOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        deleteTabRef.current &&
+        !deleteTabRef.current.contains(event.target as Node)
+      ) {
+        setIsDeleteTabOpened(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "task",
     item: { id: task.id },
-    collect: (monitor: any) => ({
+    collect: (monitor: DragSourceMonitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }));
@@ -182,21 +210,50 @@ const Task = ({ task }: TaskProps) => {
           <div className="flex flex-1 flex-wrap items-center gap-2">
             {task.priority && <PriorityTag priority={task.priority} />}
             <div className="flex gap-2">
-              {taskTagsSplit.map((tag) => {
-                return (
-                  <div
-                    key={tag}
-                    className="rounded-full bg-blue-100 px-2 py-1 text-xs"
-                  >
-                    {tag}
-                  </div>
-                );
-              })}
+              {taskTagsSplit.map((tag, index) => (
+                <div
+                  key={`${tag}-${index}`}
+                  className="rounded-full bg-blue-100 px-2 py-1 text-xs"
+                >
+                  {tag}
+                </div>
+              ))}
             </div>
           </div>
-          <button className="flex h-7 w-4 flex-shrink-0 items-center justify-center dark:text-neutral-500">
-            <EllipsisVertical size={26} />
-          </button>
+          <div className="relative flex items-center gap-1">
+            <button
+              className="flex h-6 w-5 items-center justify-center dark:text-neutral-500"
+              onClick={() => setIsDeleteTabOpened(true)}
+            >
+              <EllipsisVertical size={26} />
+            </button>
+            {isDeleteTabOpened && (
+              <div
+                ref={deleteTabRef}
+                className="absolute right-2 top-full z-50 w-48 rounded-lg bg-white p-2 shadow-lg dark:bg-dark-secondary"
+              >
+                <div className="flex flex-col space-y-2">
+                  <button
+                    className="block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-dark-tertiary"
+                    onClick={() => {
+                      setIsDeleteTabOpened(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-dark-tertiary"
+                    onClick={() => {
+                      setIsDeleteTabOpened(false);
+                      setIsModalDeleteTaskOpen(true);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <div className="my-3 flex justify-between">
           <h4 className="text-md font-bold dark:text-white">{task.title}</h4>
@@ -225,7 +282,7 @@ const Task = ({ task }: TaskProps) => {
               <div className="flex -space-x-[6px] overflow-hidden">
                 {task.assignee && (
                   <Image
-                    key={task.assignee.userId}
+                    key={`assignee-${task.assignee.userId}`}
                     src={`/${task.assignee.profilePictureUrl}`}
                     alt={task.assignee.username}
                     width={30}
@@ -235,7 +292,7 @@ const Task = ({ task }: TaskProps) => {
                 )}
                 {task.author && (
                   <Image
-                    key={task.author.userId}
+                    key={`author-${task.author.userId}`}
                     src={`/${task.author.profilePictureUrl}`}
                     alt={task.author.username}
                     width={30}
@@ -251,6 +308,11 @@ const Task = ({ task }: TaskProps) => {
           </div>
         </div>
       </div>
+      <ModalDeleteTask
+        isOpen={isModalDeleteTaskOpen}
+        onClose={() => setIsModalDeleteTaskOpen(false)}
+        taskId={task.id}
+      />
     </div>
   );
 };

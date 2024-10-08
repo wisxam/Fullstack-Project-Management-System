@@ -2,7 +2,6 @@ import { useGetTasksQuery } from "@/app/state/api";
 import React, { useState } from "react";
 import Header from "@/components/Header";
 import { tailChase } from "ldrs";
-// import TaskCard from "@/components/PagesComponents/TaskCard";
 import TaskCard from "@/components/PagesComponents/TaskCard";
 
 tailChase.register();
@@ -26,12 +25,9 @@ const ListView = ({ id, setIsModalNewTaskOpen }: ListProps) => {
   };
 
   const filteredTasks = tasks?.filter((task) => {
-    const filterPriority = priorityFilter;
-    return (
-      filterPriority === "" || task.priority === filterPriority || ""
-      // task.priority === filterPriority.toLowerCase()
-    );
+    return priorityFilter === "" || task.priority === priorityFilter;
   });
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -47,7 +43,18 @@ const ListView = ({ id, setIsModalNewTaskOpen }: ListProps) => {
   return (
     <div className="px-4 pb-8 xl:px-6">
       <div className="flex justify-between pt-5">
-        <Header name="Abstract List View">
+        <Header
+          name="Abstract List View"
+          buttonComponent={
+            <button
+              className="flex-e flex items-center rounded-md bg-blue-primary px-3 py-2 text-white hover:bg-blue-600"
+              onClick={() => setIsModalNewTaskOpen(true)}
+            >
+              Add Task
+            </button>
+          }
+          isSmallText
+        >
           <div className="inline-block w-64">
             <select
               value={priorityFilter}
@@ -67,7 +74,7 @@ const ListView = ({ id, setIsModalNewTaskOpen }: ListProps) => {
         {filteredTasks && filteredTasks.length > 0 ? (
           <div>
             {filteredTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard key={task.id} task={task} canDelete />
             ))}
           </div>
         ) : (

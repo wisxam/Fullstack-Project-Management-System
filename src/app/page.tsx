@@ -1,7 +1,6 @@
+import HomePage from "./projects/home/page";
+
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24 dark:bg-dark-secondary">
-      hi
-    </main>
-  );
+  
+  return <HomePage />;
 }
