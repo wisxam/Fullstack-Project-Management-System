@@ -7,9 +7,12 @@ type Props = {
 
 const ProjectCard = ({ project }: Props) => {
   return (
-    <div className="rounded border p-4 shadow-md">
-      <h3>{project.name}</h3>
-      <p>{project.description}</p>
+    <div className="flex max-h-[300px] min-h-[210px] flex-col gap-5 rounded border border-stone-400 p-4 font-bold shadow-sm transition-shadow duration-200 hover:border-stone-700 dark:border-dark-tertiary dark:bg-dark-secondary dark:text-white dark:hover:border-[#ffebb7] dark:hover:border-opacity-20 dark:hover:shadow-slate-500">
+      <h4 className="flex justify-center underline">
+        Project ID: {project.id}
+      </h4>
+      <h3>Project Name: {project.name}</h3>
+      <p>Project Description: {project.description}</p>
       <p>Start Date: {project.startDate}</p>
       <p>End Date: {project.endDate}</p>
     </div>

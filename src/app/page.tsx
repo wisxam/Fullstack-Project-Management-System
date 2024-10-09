@@ -1,6 +1,9 @@
-import HomePage from "./projects/home/page";
+import HomePageSelector from "./homepage/page";
 
-export default function Home() {
-  
-  return <HomePage />;
-}
+// Important for client-side routing
+
+const Home = () => {
+  return <HomePageSelector />;
+};
+
+export default Home;

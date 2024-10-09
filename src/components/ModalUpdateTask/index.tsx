@@ -1,6 +1,6 @@
-import { useCreateTaskMutation } from "@/app/state/api";
+import { useUpdateTaskMutation } from "@/app/state/api";
 import Modal from "@/components/PagesComponents/Modal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatISO } from "date-fns";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -8,28 +8,40 @@ import { Status } from "@/app/types/statusTypes";
 import { Priority } from "@/app/types/priorityTypes";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/app/state";
+import { Task } from "@/app/types/taskTypes";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   id: string;
+  task: Task;
 };
 
-const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
+const ModalUpdateTask = ({ isOpen, onClose, id, task }: Props) => {
   const dispatch = useAppDispatch();
-  const [createTask, { isLoading }] = useCreateTaskMutation();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<Status>(Status.ToDo);
-  const [priority, setPriority] = useState<Priority>(Priority.None);
-  const [tags, setTags] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [authorUserId, setAuthorUserId] = useState("");
-  const [assignedUserId, setAssignedUserId] = useState("");
-  const [points, setPoints] = useState("");
+  const [updateTask, { isLoading }] = useUpdateTaskMutation({
+    fixedCacheKey: id,
+  });
 
-  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+  const [title, setTitle] = useState(task?.title || "");
+  const [description, setDescription] = useState(task?.description || "");
+  const [status, setStatus] = useState<Status>(task?.status || Status.ToDo);
+  const [priority, setPriority] = useState<Priority>(
+    task?.priority || Priority.None,
+  );
+  const [tags, setTags] = useState(task?.tags || "");
+  const [startDate, setStartDate] = useState(
+    task?.startDate ? task.startDate.split("T")[0] : "",
+  );
+  const [dueDate, setDueDate] = useState(
+    task?.dueDate ? task.dueDate.split("T")[0] : "",
+  );
+  const [authorUserId, setAuthorUserId] = useState(task?.authorUserId || "");
+  const [assignedUserId, setAssignedUserId] = useState(
+    task?.assignedUserId || "",
+  );
+  const [points, setPoints] = useState(task?.points || "");
+
   const isSideBarCollaped = useAppSelector(
     (state) => state.global.isSidebarCollapsed,
   );
@@ -43,33 +55,47 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
   const handleSubmit = async () => {
     if (!title || !authorUserId) return;
 
-    const formattedStartDate = formatISO(new Date(startDate), {
-      representation: "complete",
-    });
+    const formattedStartDate = startDate
+      ? formatISO(new Date(startDate), {
+          representation: "complete",
+        })
+      : undefined;
 
-    const formattedDueDate = formatISO(new Date(dueDate), {
-      representation: "complete",
-    });
+    const formattedDueDate = dueDate
+      ? formatISO(new Date(dueDate), {
+          representation: "complete",
+        })
+      : undefined;
 
     try {
-      await createTask({
-        title,
-        description,
-        status,
-        priority,
-        tags,
-        startDate: formattedStartDate,
-        dueDate: formattedDueDate,
-        authorUserId: parseInt(authorUserId),
-        assignedUserId: parseInt(assignedUserId),
-        projectId: Number(id),
-        points: parseInt(points),
+      const patchedBody = {
+        ...(title !== task.title && { title }),
+        ...(description !== task.description && { description }),
+        ...(status !== task.status && { status }),
+        ...(priority !== task.priority && { priority }),
+        ...(tags !== task.tags && { tags }),
+        ...(startDate && { startDate: formattedStartDate }),
+        ...(dueDate && { dueDate: formattedDueDate }),
+        ...(authorUserId !== task.authorUserId && {
+          authorUserId: authorUserId,
+        }),
+        ...(assignedUserId !== task.assignedUserId && {
+          assignedUserId: assignedUserId,
+        }),
+        ...(points !== task.points && { points: Number(points) }),
+      };
+
+      await updateTask({
+        taskId: id,
+        patchedBody,
+        projectId: Number(task.projectId),
       }).unwrap();
       sideBarCollapse();
-      toast.success("Task created successfully!");
+      toast.success("Task updated successfully!");
       resetForm();
     } catch (error: any) {
-      const errorMessage = error.data?.message || "Failed to create task!";
+      const errorMessage = "Failed to update task!";
+      console.log(error);
       toast.error(errorMessage);
     }
   };
@@ -79,17 +105,24 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
   };
 
   const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setStatus(Status.ToDo);
-    setPriority(Priority.None);
-    setTags("");
-    setStartDate("");
-    setDueDate("");
-    setAuthorUserId("");
-    setAssignedUserId("");
-    setPoints("");
+    setTitle(task?.title || "");
+    setDescription(task?.description || "");
+    setStatus(task?.status || Status.ToDo);
+    setPriority(task?.priority || Priority.None);
+    setTags(task?.tags || "");
+    setStartDate(task?.startDate ? task.startDate.split("T")[0] : "");
+    setDueDate(task?.dueDate ? task.dueDate.split("T")[0] : "");
+    setAuthorUserId(task?.authorUserId || "");
+    setAssignedUserId(task?.assignedUserId || "");
+    setPoints(task?.points || "");
   };
+
+  useEffect(() => {
+    // Prefill form data when modal opens
+    if (task) {
+      resetForm();
+    }
+  }, [task]);
 
   const selectStyles =
     "mb-4 block w-full rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus-outline-none";
@@ -104,7 +137,7 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
         resetForm();
         onClose();
       }}
-      name="Create New Task"
+      name="Update Task"
     >
       <form
         className="mt-4 space-y-6"
@@ -113,7 +146,6 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
           handleSubmit();
         }}
       >
-        {!title && <span className="text-red-500">Title is required</span>}
         <input
           type="text"
           className={inputStyles}
@@ -136,7 +168,6 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
             onChange={(e) => setStatus(e.target.value as Status)}
             disabled={isLoading}
           >
-            <option value="">Select Status</option>
             <option value={Status.ToDo}>{Status.ToDo}</option>
             <option value={Status.WorkInProgress}>
               {Status.WorkInProgress}
@@ -150,7 +181,6 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
             onChange={(e) => setPriority(e.target.value as Priority)}
             disabled={isLoading}
           >
-            <option value="">Select Priority</option>
             <option value={Priority.Urgent}>Urgent</option>
             <option value={Priority.High}>High</option>
             <option value={Priority.Medium}>Medium</option>
@@ -198,9 +228,6 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
           onChange={(e) => setAuthorUserId(e.target.value)}
           disabled={isLoading}
         />
-        {!authorUserId && (
-          <span className="text-red-500">Author user is required</span>
-        )}
         <input
           type="text"
           className={inputStyles}
@@ -209,41 +236,19 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
           onChange={(e) => setAssignedUserId(e.target.value)}
           disabled={isLoading}
         />
-        {/* {id === null && (
-          <input
-            type="text"
-            className={inputStyles}
-            placeholder="ProjectId"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-          />
-        )} */}
         <button
           type="submit"
-          className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-blue-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+          className={`w-full rounded bg-green-500 p-2 text-white ${
             !isFormValid() || isLoading ? "cursor-not-allowed opacity-50" : ""
           }`}
           disabled={!isFormValid() || isLoading}
         >
-          {isLoading ? "Creating..." : "Create Task"}
+          {isLoading ? "Updating..." : "Update Task"}
         </button>
       </form>
-      <ToastContainer
-        position="bottom-left"
-        autoClose={3000}
-        toastStyle={{
-          backgroundColor: isDarkMode ? "#3b3d40" : "#d1d5db",
-          color: isDarkMode ? "#d1d5db" : "#3b3d40",
-        }}
-        bodyStyle={{
-          color: isDarkMode ? "#d1d5db" : "#3b3d40",
-        }}
-        progressStyle={{
-          backgroundColor: "green", // Set the loading bar color here
-        }}
-      />
+      <ToastContainer />
     </Modal>
   );
 };
 
-export default ModalNewTask;
+export default ModalUpdateTask;

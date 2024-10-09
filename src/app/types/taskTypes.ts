@@ -1,7 +1,7 @@
 import { Attachment } from "./attachmentTypes";
 import { Comment } from "./commentsTypes";
 import { Priority } from "./priorityTypes";
-import { Status } from "./statsTypes";
+import { Status } from "./statusTypes";
 import { User } from "./userTypes";
 
 export interface Task {

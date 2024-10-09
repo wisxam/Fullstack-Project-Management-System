@@ -16,6 +16,7 @@ import Image from "next/image";
 import CommentsModal from "@/components/PagesComponents/CommentsModal";
 import { Priority } from "@/app/types/priorityTypes";
 import ModalDeleteTask from "@/components/ModalDeleteTask";
+import ModalUpdateTask from "@/components/ModalUpdateTask";
 
 zoomies.register();
 
@@ -148,9 +149,17 @@ type TaskProps = {
 };
 
 const Task = ({ task }: TaskProps) => {
-  const [isDeleteTabOpened, setIsDeleteTabOpened] = useState(false);
+  const [isAdjustingTabOpened, setisAdjustingTabOpened] = useState(false);
   const deleteTabRef = useRef<HTMLDivElement | null>(null);
   const [isModalDeleteTaskOpen, setIsModalDeleteTaskOpen] = useState(false);
+
+  const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  const handleOpenUpdateModal = (taskId: number) => {
+    setActiveTaskId(taskId);
+    setIsUpdateModalOpen(true);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -158,7 +167,7 @@ const Task = ({ task }: TaskProps) => {
         deleteTabRef.current &&
         !deleteTabRef.current.contains(event.target as Node)
       ) {
-        setIsDeleteTabOpened(false);
+        setisAdjustingTabOpened(false);
       }
     };
 
@@ -223,11 +232,11 @@ const Task = ({ task }: TaskProps) => {
           <div className="relative flex items-center gap-1">
             <button
               className="flex h-6 w-5 items-center justify-center dark:text-neutral-500"
-              onClick={() => setIsDeleteTabOpened(true)}
+              onClick={() => setisAdjustingTabOpened(true)}
             >
               <EllipsisVertical size={26} />
             </button>
-            {isDeleteTabOpened && (
+            {isAdjustingTabOpened && (
               <div
                 ref={deleteTabRef}
                 className="absolute right-2 top-full z-50 w-48 rounded-lg bg-white p-2 shadow-lg dark:bg-dark-secondary"
@@ -236,19 +245,28 @@ const Task = ({ task }: TaskProps) => {
                   <button
                     className="block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-dark-tertiary"
                     onClick={() => {
-                      setIsDeleteTabOpened(false);
+                      setisAdjustingTabOpened(false);
+                      handleOpenUpdateModal(task.id);
                     }}
                   >
-                    Cancel
+                    Update
                   </button>
                   <button
                     className="block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-dark-tertiary"
                     onClick={() => {
-                      setIsDeleteTabOpened(false);
+                      setisAdjustingTabOpened(false);
                       setIsModalDeleteTaskOpen(true);
                     }}
                   >
                     Delete
+                  </button>
+                  <button
+                    className="block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-dark-tertiary"
+                    onClick={() => {
+                      setisAdjustingTabOpened(false);
+                    }}
+                  >
+                    Cancel
                   </button>
                 </div>
               </div>
@@ -313,10 +331,15 @@ const Task = ({ task }: TaskProps) => {
         onClose={() => setIsModalDeleteTaskOpen(false)}
         taskId={task.id}
       />
+      <ModalUpdateTask
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        id={String(task.id)}
+        task={task}
+      />
     </div>
   );
 };
-
 export const PriorityTag = ({ priority }: { priority: Priority }) => {
   return (
     <div

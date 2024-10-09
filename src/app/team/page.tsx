@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   DataGrid,
@@ -12,7 +10,6 @@ import { useGetTeamsQuery } from "../state/api";
 import Header from "@/components/Header";
 import { useAppSelector } from "../redux";
 import { tailChase } from "ldrs";
-import Image from "next/image";
 import { dataGridClassNames, dataGridSxStyles } from "../projects/lib/utils";
 
 tailChase.register();
@@ -67,7 +64,7 @@ const Teams = () => {
   }
 
   if (isError || !teams) {
-    return <div>An error occurred while fetching tasks</div>;
+    return <div>An error occurred while fetching teams</div>;
   }
 
   return (

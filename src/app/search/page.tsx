@@ -32,13 +32,11 @@ const Search = () => {
     500,
   );
 
-  const taskLength = searchResult?.tasks?.length;
-
   useEffect(() => {
     if (searchResult) {
       setLocalSearchResult(searchResult);
     }
-  }, [searchResult, taskLength]);
+  }, [searchResult]);
 
   return (
     <div className="p-8">
@@ -62,18 +60,20 @@ const Search = () => {
         {!isLoading && !isError && localSearchResult && (
           <div>
             {localSearchResult.tasks && localSearchResult.tasks?.length > 0 && (
-              <h2>Tasks</h2>
+              <h2 className="dark:text-white">Tasks</h2>
             )}
             {localSearchResult.tasks?.map((task) => (
               <TaskCard key={task.id} task={task} canDelete />
             ))}
             {localSearchResult?.projects &&
-              localSearchResult.projects?.length > 0 && <h2>Projects</h2>}
+              localSearchResult.projects?.length > 0 && (
+                <h2 className="pb-5 dark:text-white">Projects</h2>
+              )}
             {localSearchResult?.projects?.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
             {localSearchResult.users && localSearchResult.users?.length > 0 && (
-              <h2>Users</h2>
+              <h2 className="dark:text-white">Users</h2>
             )}
             {localSearchResult.users?.map((user) => (
               <UserCard key={user.userId} user={user} />

@@ -81,6 +81,38 @@ export const api = createApi({
       query: () => "teams",
       providesTags: ["Teams"],
     }),
+
+    updateTask: build.mutation<
+      Task,
+      { taskId: string; patchedBody: object; projectId: number }
+    >({
+      query: ({ taskId, patchedBody }) => ({
+        url: `tasks/${taskId}`,
+        method: "PATCH",
+        body: patchedBody,
+      }),
+      async onQueryStarted(
+        { taskId, patchedBody, projectId },
+        { dispatch, queryFulfilled },
+      ) {
+        // Optimistically update the task in the local cache
+        const patchResult = dispatch(
+          api.util.updateQueryData("getTasks", { projectId }, (draft) => {
+            const task = draft.find((task) => task.id === Number(taskId));
+            if (task) {
+              Object.assign(task, patchedBody); // Merge the patched fields
+            }
+          }),
+        );
+        try {
+          // Wait for the server's response to confirm the update
+          await queryFulfilled;
+        } catch {
+          // If the patch fails, undo the optimistic update
+          patchResult.undo();
+        }
+      },
+    }),
   }),
 });
 
@@ -94,4 +126,5 @@ export const {
   useSearchTermQuery,
   useGetUsersQuery,
   useGetTeamsQuery,
+  useUpdateTaskMutation,
 } = api;
