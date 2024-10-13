@@ -1,5 +1,5 @@
 import { useAppSelector } from "@/app/redux";
-import { useDeleteTaskMutation } from "@/app/state/api";
+import { useDeleteProjectMutation } from "@/app/state/api";
 import Modal from "@/components/PagesComponents/Modal";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,19 +7,17 @@ import "react-toastify/dist/ReactToastify.css";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  taskId: number | number[];
+  projectId: number;
 };
 
-const ModalDeleteTask = ({ isOpen, onClose, taskId }: Props) => {
-  const [deleteTask, { isLoading }] = useDeleteTaskMutation();
+const ModalDeleteProject = ({ isOpen, onClose, projectId }: Props) => {
+  const [deleteProject, { isLoading }] = useDeleteProjectMutation();
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const handleDelete = async () => {
-    if (!taskId) return;
+    if (!projectId) return;
     try {
-      const taskIds = Array.isArray(taskId) ? taskId : [taskId];
-      console.log("taskIds:", taskIds);
-      await deleteTask(taskIds).unwrap();
-      toast.success("Task(s) Deleted Successfully", {
+      await deleteProject(projectId).unwrap();
+      toast.success("Project Deleted Successfully", {
         style: {
           backgroundColor: isDarkMode ? "#1D1D1D" : "#DFF6FF",
           color: isDarkMode ? "#DFF6FF" : "#1D1D1D",
@@ -29,7 +27,7 @@ const ModalDeleteTask = ({ isOpen, onClose, taskId }: Props) => {
         },
       });
     } catch (error: unknown) {
-      const errorMessage = "Error Deleting Task(s)";
+      const errorMessage = "Error Deleting Project";
       toast.error(errorMessage, {
         style: {
           backgroundColor: isDarkMode ? "#6A2C2C" : "#7F3B3B",
@@ -57,11 +55,11 @@ const ModalDeleteTask = ({ isOpen, onClose, taskId }: Props) => {
             isLoading ? "cursor-not-allowed opacity-50" : ""
           }`}
         >
-          {isLoading ? "Deleting..." : "Delete Task"}
+          {isLoading ? "Deleting..." : "Delete Project"}
         </button>
       </div>
     </Modal>
   );
 };
 
-export default ModalDeleteTask;
+export default ModalDeleteProject;

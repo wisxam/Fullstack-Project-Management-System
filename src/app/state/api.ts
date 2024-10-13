@@ -32,6 +32,18 @@ export const api = createApi({
           : [{ type: "Tasks" as const }],
     }),
 
+    // getTasks: build.query<Task[], { projectId: number }>({
+    //   query: ({ projectId }) => `tasks?projectId=${projectId}`,
+    //   transformResponse: (response: TaskData[]) => {
+    //     // Map the response to instances of Task class
+    //     return response.map((data) => new Task(data));
+    //   },
+    //   providesTags: (result) =>
+    //     result
+    //       ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
+    //       : [{ type: "Tasks" as const }],
+    // }),
+
     createTask: build.mutation<Task, Partial<Task>>({
       query: (task) => ({
         url: "tasks",
@@ -43,33 +55,33 @@ export const api = createApi({
 
     updateTaskStatus: build.mutation<Task, { taskId: number; status: string }>({
       query: ({ taskId, status }) => ({
-        // taskId and status in curly braces because they are now handled as objects
         url: `tasks/${taskId}/status`,
         method: "PATCH",
         body: { status },
       }),
       invalidatesTags: (result, error, { taskId }) => [
-        { type: "Tasks", id: taskId }, // I would wanna update only the changed ones not the entire task list (one specific task not all the tasks)
+        { type: "Tasks" as const, id: taskId },
       ],
     }),
 
-    deleteTask: build.mutation<void, number>({
-      query: (taskId) => ({
-        url: `tasks/${taskId}`,
+    deleteTask: build.mutation<void, number | number[]>({
+      query: (taskIds) => ({
+        url: Array.isArray(taskIds) ? `tasks/bulk-delete` : `tasks/${taskIds}`,
         method: "DELETE",
+        body: Array.isArray(taskIds) ? { taskIds } : undefined,
       }),
-      // Add invalidation for search term
-      invalidatesTags: (result, error, taskId) => [
-        { type: "Tasks", id: taskId },
-        { type: "searchTerm", id: "SEARCH" }, // This should be an identifier for my search cache
-        // Incase of deletion i invalidate the searchTerm, and the searchTerm is being used as providedTags in my searchTerm query
+      invalidatesTags: (result, error, taskIds) => [
+        ...(Array.isArray(taskIds)
+          ? taskIds.map((id) => ({ type: "Tasks" as const, id }))
+          : [{ type: "Tasks" as const, id: taskIds }]),
+        { type: "searchTerm" as const, id: "SEARCH" },
       ],
     }),
 
     searchTerm: build.query<SearchResults, string>({
       query: (query) => `search?query=${query}`,
       providesTags: (result) =>
-        result ? [{ type: "searchTerm", id: "SEARCH" }] : [], // Fallback incase the searchTerm returns back with null
+        result ? [{ type: "searchTerm" as const, id: "SEARCH" }] : [],
     }),
 
     getUsers: build.query<User[], void>({
@@ -95,23 +107,63 @@ export const api = createApi({
         { taskId, patchedBody, projectId },
         { dispatch, queryFulfilled },
       ) {
-        // Optimistically update the task in the local cache
         const patchResult = dispatch(
           api.util.updateQueryData("getTasks", { projectId }, (draft) => {
             const task = draft.find((task) => task.id === Number(taskId));
             if (task) {
-              Object.assign(task, patchedBody); // Merge the patched fields
+              Object.assign(task, patchedBody);
             }
           }),
         );
         try {
-          // Wait for the server's response to confirm the update
           await queryFulfilled;
         } catch {
-          // If the patch fails, undo the optimistic update
           patchResult.undo();
         }
       },
+    }),
+
+    updateProject: build.mutation<
+      Project,
+      { projectId: number; patchedBody: Partial<Project> }
+    >({
+      query: ({ projectId, patchedBody }) => ({
+        url: `projects/${projectId}`,
+        method: "PATCH",
+        body: patchedBody,
+      }),
+      async onQueryStarted(
+        { projectId, patchedBody },
+        { dispatch, queryFulfilled },
+      ) {
+        const patchResult = dispatch(
+          api.util.updateQueryData("getProjects", undefined, (draft) => {
+            const project = draft.find((project) => project.id === projectId);
+            if (project) {
+              Object.assign(project, patchedBody);
+            }
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+    }),
+    deleteProject: build.mutation<Project, number>({
+      query: (projectId) => ({
+        url: `projects/${projectId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+    getTasksByUser: build.query<Task[], number>({
+      query: (userId) => `tasks/user/${userId}`,
+      providesTags: (result, error, userId) =>
+        result
+          ? result.map(({ id }) => ({ type: "Tasks", id }))
+          : [{ type: "Tasks", id: userId }],
     }),
   }),
 });
@@ -127,4 +179,7 @@ export const {
   useGetUsersQuery,
   useGetTeamsQuery,
   useUpdateTaskMutation,
+  useUpdateProjectMutation,
+  useDeleteProjectMutation,
+  useGetTasksByUserQuery,
 } = api;

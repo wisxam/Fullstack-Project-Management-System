@@ -3,6 +3,7 @@
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/app/state";
 import { useGetProjectsQuery } from "@/app/state/api";
+import { Project } from "@/app/types/projectTypes";
 import { SidebarLinksProps } from "@/app/types/sidebarLinksProps";
 import {
   AlertCircle,
@@ -11,6 +12,7 @@ import {
   Briefcase,
   ChevronDown,
   ChevronUp,
+  EllipsisVertical,
   Home,
   Layers3,
   LockIcon,
@@ -29,6 +31,7 @@ import { useState } from "react";
 const Sidebar = () => {
   const [showProjects, setShowProjects] = useState(false);
   const [showPriorities, setShowPriorities] = useState(true);
+  const [selectedProjectId, setSelectedProjectId] = useState(null); // New state to track selected project
 
   const { data: project } = useGetProjectsQuery();
   const dispatch = useAppDispatch();
@@ -45,8 +48,8 @@ const Sidebar = () => {
       <div className="flex h-[100%] w-full flex-col justify-start">
         {/* Top Logo */}
         <div className="z-50 flex min-h-[56px] w-64 items-center justify-between bg-white px-6 pt-3 dark:bg-black">
-          <div className="text-xl font-bold text-gray-800 dark:text-white">
-            Cool List
+          <div className="pb-3 text-xl font-bold text-gray-800 dark:text-white">
+            <p className="text-center">Project Management</p>
           </div>
           {isSidebarCollapsed ? null : (
             <button
@@ -97,15 +100,8 @@ const Sidebar = () => {
           )}
         </button>
         {/* Projects List */}
-        {showProjects &&
-          project?.map((project) => (
-            <SidebarLinks
-              key={project.id}
-              icon={Briefcase}
-              label={project.name}
-              href={`/projects/${project.id}`}
-            />
-          ))}
+
+        {showProjects && project && <ProjectsRender projects={project} />}
 
         {/* Priorities Links */}
         <button
@@ -174,8 +170,33 @@ const SidebarLinks = ({ href, icon: Icon, label }: SidebarLinksProps) => {
         <span className="font-medium text-gray-800 dark:text-gray-100">
           {label}
         </span>
+        {pathName.includes("projects") && isActive && (
+          <button className="ml-auto">
+            <EllipsisVertical className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+          </button>
+        )}
       </div>
     </Link>
+  );
+};
+
+type ProjectRender = {
+  projects: Project[];
+};
+
+const ProjectsRender = ({ projects }: ProjectRender) => {
+  return (
+    <div>
+      {projects?.map((proj) => (
+        <div key={proj.id} className="py-2">
+          <SidebarLinks
+            icon={Briefcase}
+            label={proj.name}
+            href={`/projects/${proj.id}`}
+          />
+        </div>
+      ))}
+    </div>
   );
 };
 

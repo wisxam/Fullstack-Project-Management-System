@@ -1,14 +1,9 @@
 "use client";
 
+import React, { useState } from "react";
+import { DataGrid, GridColDef, GridRowSelectionModel } from "@mui/x-data-grid";
 import { useAppSelector } from "@/app/redux";
 import { useGetProjectsQuery, useGetTasksQuery } from "@/app/state/api";
-import React from "react";
-import { tailChase } from "ldrs";
-import { Task } from "@/app/types/taskTypes";
-import { Priority } from "@/app/types/priorityTypes";
-import { Project } from "@/app/types/projectTypes";
-import { Status } from "@/app/types/statusTypes";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Header from "@/components/Header";
 import {
   BarChart,
@@ -24,8 +19,10 @@ import {
   Cell,
 } from "recharts";
 import { dataGridClassNames, dataGridSxStyles } from "@/app/projects/lib/utils";
-
-tailChase.register();
+import { Task } from "@/app/types/taskTypes";
+import { Priority } from "@/app/types/priorityTypes";
+import { Status } from "@/app/types/statusTypes";
+import ModalDeleteTask from "@/components/ModalDeleteTask";
 
 type Props = {
   params: { id: number };
@@ -80,6 +77,14 @@ const Homepage = ({ params }: Props) => {
   } = useGetTasksQuery({ projectId: id });
 
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+
+  const [isModalDeleteTaskOpen, setIsModalDeleteTaskOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>([]);
+
+  // const handleDeleteTasks = () => {
+
+  //   // Implement deletion logic here, e.g., make an API call to delete the selected tasks.
+  // };
 
   if (projectsLoading || tasksLoading) {
     return (
@@ -163,17 +168,13 @@ const Homepage = ({ params }: Props) => {
               />
               <XAxis dataKey="name" stroke={chartColors.text} />
               <YAxis stroke={chartColors.text} />
-              <Tooltip
-                contentStyle={{
-                  width: "min-content",
-                  height: "min-content",
-                }}
-              />
+              <Tooltip />
               <Legend />
               <Bar dataKey="count" fill={chartColors.bar} />
             </BarChart>
           </ResponsiveContainer>
         </div>
+
         <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary">
           <h3 className="mb-4 text-lg font-semibold dark:text-white">
             Tasks Status
@@ -193,16 +194,32 @@ const Homepage = ({ params }: Props) => {
             </PieChart>
           </ResponsiveContainer>
         </div>
+
         <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary md:col-span-2">
           <h3 className="mb-4 text-lg font-semibold dark:text-white">
             Your Tasks
           </h3>
+
+          {selectedRows?.length > 0 && (
+            <div className="mb-4">
+              <button
+                className="rounded bg-red-500 px-4 py-2 text-white"
+                onClick={() => setIsModalDeleteTaskOpen(true)}
+              >
+                Delete Selected Tasks
+              </button>
+            </div>
+          )}
+
           <div style={{ height: 300, width: "100%" }}>
             <DataGrid
               rows={tasks || []}
               columns={taskColumns}
               checkboxSelection
               loading={tasksLoading}
+              onRowSelectionModelChange={(newSelectionModel) => {
+                setSelectedRows(newSelectionModel);
+              }}
               getRowClassName={() => "data-grid-row"}
               getCellClassName={() => "data-grid-cell"}
               className={dataGridClassNames}
@@ -211,6 +228,11 @@ const Homepage = ({ params }: Props) => {
           </div>
         </div>
       </div>
+      <ModalDeleteTask
+        isOpen={isModalDeleteTaskOpen}
+        onClose={() => setIsModalDeleteTaskOpen(false)}
+        taskId={selectedRows as number[]}
+      />
     </div>
   );
 };

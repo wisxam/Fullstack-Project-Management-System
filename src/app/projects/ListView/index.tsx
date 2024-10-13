@@ -73,9 +73,9 @@ const ListView = ({ id, setIsModalNewTaskOpen }: ListProps) => {
       <div className="mt-4 grid-cols-1 flex-wrap gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {filteredTasks && filteredTasks.length > 0 ? (
           <div>
-            {filteredTasks.map((task) => (
-              <TaskCard key={task.id} task={task} canDelete />
-            ))}
+            {filteredTasks.map((task) => {
+              return <TaskCard key={task.id} task={task} canDelete canUpdate />;
+            })}
           </div>
         ) : (
           <div className="dark:text-white">No Tasks Found</div>

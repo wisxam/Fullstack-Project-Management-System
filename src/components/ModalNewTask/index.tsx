@@ -1,8 +1,8 @@
 import { useCreateTaskMutation } from "@/app/state/api";
 import Modal from "@/components/PagesComponents/Modal";
 import { useState } from "react";
-import { formatISO } from "date-fns";
-import { toast, ToastContainer } from "react-toastify";
+import { format, formatISO } from "date-fns";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Status } from "@/app/types/statusTypes";
 import { Priority } from "@/app/types/priorityTypes";
@@ -12,10 +12,14 @@ import { setIsSidebarCollapsed } from "@/app/state";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  id: string;
+  id?: string | null;
 };
 
-const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
+const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
+  const formatDateForInput = (date: string | undefined) => {
+    return date ? format(new Date(date), "yyyy-MM-dd") : "";
+  };
+
   const dispatch = useAppDispatch();
   const [createTask, { isLoading }] = useCreateTaskMutation();
   const [title, setTitle] = useState("");
@@ -28,11 +32,13 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
   const [authorUserId, setAuthorUserId] = useState("");
   const [assignedUserId, setAssignedUserId] = useState("");
   const [points, setPoints] = useState("");
+  const [projectId, setProjectId] = useState("");
 
-  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const isSideBarCollaped = useAppSelector(
     (state) => state.global.isSidebarCollapsed,
   );
+
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   const sideBarCollapse = () => {
     if (!isSideBarCollaped) {
@@ -41,15 +47,21 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
   };
 
   const handleSubmit = async () => {
-    if (!title || !authorUserId) return;
+    if (!title || !authorUserId || !(id !== null || projectId)) return;
 
-    const formattedStartDate = formatISO(new Date(startDate), {
-      representation: "complete",
-    });
+    const startDateObj = startDate
+      ? new Date(`${startDate}T00:00:00`)
+      : undefined;
 
-    const formattedDueDate = formatISO(new Date(dueDate), {
-      representation: "complete",
-    });
+    const dueDateObj = dueDate ? new Date(`${dueDate}T00:00:00`) : undefined;
+
+    const newFormattedStartDate = startDateObj
+      ? formatISO(startDateObj, { representation: "complete" })
+      : undefined;
+
+    const newFormattedDueDate = dueDateObj
+      ? formatISO(dueDateObj, { representation: "complete" })
+      : undefined;
 
     try {
       await createTask({
@@ -58,24 +70,40 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
         status,
         priority,
         tags,
-        startDate: formattedStartDate,
-        dueDate: formattedDueDate,
+        startDate: newFormattedStartDate,
+        dueDate: newFormattedDueDate,
         authorUserId: parseInt(authorUserId),
         assignedUserId: parseInt(assignedUserId),
-        projectId: Number(id),
         points: parseInt(points),
+        projectId: id === null ? Number(projectId) : Number(id),
       }).unwrap();
       sideBarCollapse();
-      toast.success("Task created successfully!");
+      toast.success("Task created successfully!", {
+        style: {
+          backgroundColor: isDarkMode ? "#1D1D1D" : "#DFF6FF",
+          color: isDarkMode ? "#DFF6FF" : "#1D1D1D",
+        },
+        progressStyle: {
+          backgroundColor: isDarkMode ? "#DFF6FF" : "#DFF6FF",
+        },
+      });
       resetForm();
     } catch (error: any) {
-      const errorMessage = error.data?.message || "Failed to create task!";
-      toast.error(errorMessage);
+      const errorMessage = "Failed to create task!";
+      toast.error(errorMessage, {
+        style: {
+          backgroundColor: isDarkMode ? "#6A2C2C" : "#7F3B3B",
+          color: isDarkMode ? "#EBEBEB" : "#FFFFFF",
+        },
+        progressStyle: {
+          backgroundColor: isDarkMode ? "#FFFFFF" : "#000000",
+        },
+      });
     }
   };
 
   const isFormValid = () => {
-    return title;
+    return title && authorUserId && !(id !== null || projectId);
   };
 
   const resetForm = () => {
@@ -209,7 +237,7 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
           onChange={(e) => setAssignedUserId(e.target.value)}
           disabled={isLoading}
         />
-        {/* {id === null && (
+        {id === null && (
           <input
             type="text"
             className={inputStyles}
@@ -217,7 +245,7 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
           />
-        )} */}
+        )}
         <button
           type="submit"
           className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-blue-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
@@ -228,20 +256,6 @@ const ModalNewTask = ({ isOpen, onClose, id }: Props) => {
           {isLoading ? "Creating..." : "Create Task"}
         </button>
       </form>
-      <ToastContainer
-        position="bottom-left"
-        autoClose={3000}
-        toastStyle={{
-          backgroundColor: isDarkMode ? "#3b3d40" : "#d1d5db",
-          color: isDarkMode ? "#d1d5db" : "#3b3d40",
-        }}
-        bodyStyle={{
-          color: isDarkMode ? "#d1d5db" : "#3b3d40",
-        }}
-        progressStyle={{
-          backgroundColor: "green", // Set the loading bar color here
-        }}
-      />
     </Modal>
   );
 };

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatISO } from "date-fns";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAppSelector } from "@/app/redux";
 
 type Props = {
   isOpen: boolean;
@@ -16,6 +17,8 @@ const ModalNewProject = ({ isOpen, onClose }: Props) => {
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   const handleSubmit = async () => {
     if (!projectName || !startDate || !endDate) return; // Required values
@@ -36,11 +39,27 @@ const ModalNewProject = ({ isOpen, onClose }: Props) => {
         endDate: formattedEndDate,
       }).unwrap();
 
-      toast.success("Project created successfully!");
+      toast.success("Project Created Successfully", {
+        style: {
+          backgroundColor: isDarkMode ? "#1D1D1D" : "#DFF6FF",
+          color: isDarkMode ? "#DFF6FF" : "#1D1D1D",
+        },
+        progressStyle: {
+          backgroundColor: isDarkMode ? "#DFF6FF" : "#DFF6FF",
+        },
+      });
       resetForm();
     } catch (error) {
-      console.error("Failed to create project:", error);
-      toast.error("Failed to create project!");
+      const errorMessage = "Error Creating Project!";
+      toast.error(errorMessage, {
+        style: {
+          backgroundColor: isDarkMode ? "#6A2C2C" : "#7F3B3B",
+          color: isDarkMode ? "#EBEBEB" : "#FFFFFF",
+        },
+        progressStyle: {
+          backgroundColor: isDarkMode ? "#FFFFFF" : "#000000",
+        },
+      });
     }
   };
 
@@ -104,11 +123,6 @@ const ModalNewProject = ({ isOpen, onClose }: Props) => {
           {isLoading ? "Merging..." : "Create Project"}
         </button>
       </form>
-      <ToastContainer
-        position="bottom-left"
-        autoClose={3000}
-        className="dark:bg-dark-secondary"
-      />
     </Modal>
   );
 };
